@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.stream.annotation.StreamListener;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.stereotype.Service;
+import java.util.List;
 
 @Service
 public class PolicyHandler {
@@ -26,6 +27,20 @@ public class PolicyHandler {
         //delivery.setStatus("DeliveryStarted");
         delivery.setAmt(paymentApproved.getAmt());
         deliveryRepository.save(delivery);            
+    }
+
+    @StreamListener(KafkaProcessor.INPUT)
+    public void wheneverPaymentCanceled_CancelDelivery(@Payload PaymentCanceled paymentCanceled){
+
+        if(!paymentCanceled.validate()) return;
+
+        System.out.println("\n\n##### listener CancelDelivery : " + paymentCanceled.toJson() + "\n\n");
+
+        // Sample Logic //
+        List<Delivery> deliveryList = deliveryRepository.findByPaymentId(paymentCanceled.getId());
+        if ((deliveryList != null) && !deliveryList.isEmpty()){
+            deliveryRepository.deleteAll(deliveryList);
+        }         
     }
 
     @StreamListener(KafkaProcessor.INPUT)
